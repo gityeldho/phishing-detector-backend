@@ -31,7 +31,7 @@ fs.createReadStream("urlset.csv")
   });
 
 // ✅ Google Safe Browsing API Setup (if you decide to re-enable it in the future)
-const GOOGLE_API_KEY = "YOUR_GOOGLE_API_KEY"; // Replace with your actual API key
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 const GOOGLE_SAFE_BROWSING_URL = `https://safebrowsing.googleapis.com/v4/threatMatches:find?key=${GOOGLE_API_KEY}`;
 
 // Step 1: Check in local dataset
