@@ -1,12 +1,19 @@
 const express = require("express");
 const axios = require("axios");
-const cors = require("cors");
+const cors = require("cors"); // ✅ Only once
 const fs = require("fs");
 const csvParser = require("csv-parser");
 require("dotenv").config();
 
 const app = express();
-app.use(cors());
+
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type"]
+}));
+
+
 app.use(express.json());
 
 const dataset = new Map(); // Store dataset in memory
