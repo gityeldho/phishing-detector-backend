@@ -7,8 +7,9 @@ require("dotenv").config();
 
 const app = express();
 
-// ✅ Define allowed origins
+// ✅ Define allowed origins (Updated)
 const allowedOrigins = [
+  "https://web.whatsapp.com", // 👈 Added this line
   "chrome-extension://mnbalkhnikjhhbkjdniopgadipbiedki",
   "https://phishing-detector-frontend-olive.vercel.app"
 ];
