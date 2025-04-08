@@ -6,6 +6,7 @@ const csvParser = require("csv-parser");
 require("dotenv").config();
 
 const app = express();
+app.use(express.json()); // Required to parse JSON body
 
 // ✅ Allowed Origins
 const allowedOrigins = [
@@ -35,10 +36,28 @@ app.use(cors({
   credentials: true
 }));
 
-
 // ✅ Google Safe Browsing API
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 const GOOGLE_SAFE_BROWSING_URL = `https://safebrowsing.googleapis.com/v4/threatMatches:find?key=${GOOGLE_API_KEY}`;
+
+// ✅ Load dataset into Map
+const dataset = new Map();
+
+fs.createReadStream("urlset.csv")
+  .pipe(csvParser())
+  .on("data", (row) => {
+    const url = row["Domain"]?.trim();
+    const label = row["Label"]?.trim();
+    if (url && label) {
+      dataset.set(url, label);
+    }
+  })
+  .on("end", () => {
+    console.log("✅ Dataset loaded:", dataset.size, "entries");
+  })
+  .on("error", (err) => {
+    console.error("❌ Error loading dataset:", err.message);
+  });
 
 // ✅ Dataset Check
 async function checkInDataset(url) {
