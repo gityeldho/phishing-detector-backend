@@ -18,11 +18,16 @@ const allowedOrigins = [
 // ✅ CORS Configuration
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin) || origin === "null") {
+    if (
+      !origin ||
+      origin.startsWith("chrome-extension://") ||
+      origin === "null" ||
+      allowedOrigins.includes(origin)
+    ) {
       callback(null, true);
     } else {
-      console.log("❌ CORS blocked origin:", origin);
-      callback(new Error("Not allowed by CORS"));
+      console.log("Blocked by CORS:", origin);
+      callback(new Error("❌ Not allowed by CORS: " + origin));
     }
   },
   methods: ["GET", "POST", "OPTIONS"],
@@ -30,27 +35,6 @@ app.use(cors({
   credentials: true
 }));
 
-// ✅ Handle Preflight
-app.options("*", cors());
-app.use(express.json());
-
-// ✅ Load Dataset from CSV
-const dataset = new Map();
-fs.createReadStream("urlset.csv")
-  .pipe(csvParser())
-  .on("data", (row) => {
-    if (row.domain && row.label !== undefined) {
-      const domain = row.domain.trim();
-      const label = row.label.trim();
-      dataset.set(domain, label);
-    }
-  })
-  .on("end", () => {
-    console.log(`✅ Dataset loaded with ${dataset.size} entries.`);
-  })
-  .on("error", (err) => {
-    console.error("❌ Error loading dataset:", err.message);
-  });
 
 // ✅ Google Safe Browsing API
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
