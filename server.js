@@ -7,7 +7,7 @@ require("dotenv").config();
 
 const app = express();
 
-// ✅ Define allowed origins (updated)
+// ✅ Allowed Origins
 const allowedOrigins = [
   "chrome-extension://mnbalkhnikjhhbkjdniopgadipbiedki",
   "https://phishing-detector-frontend-olive.vercel.app",
@@ -15,13 +15,14 @@ const allowedOrigins = [
   "https://www.google.com"
 ];
 
-// ✅ Apply CORS middleware
+// ✅ CORS Configuration
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.includes(origin) || origin === "null") {
       callback(null, true);
     } else {
-      callback(new Error("❌ Not allowed by CORS: " + origin));
+      console.log("❌ CORS blocked origin:", origin);
+      callback(new Error("Not allowed by CORS"));
     }
   },
   methods: ["GET", "POST", "OPTIONS"],
@@ -29,11 +30,11 @@ app.use(cors({
   credentials: true
 }));
 
-// ✅ Handle preflight requests
+// ✅ Handle Preflight
 app.options("*", cors());
 app.use(express.json());
 
-// ✅ Load dataset from CSV
+// ✅ Load Dataset from CSV
 const dataset = new Map();
 fs.createReadStream("urlset.csv")
   .pipe(csvParser())
@@ -51,11 +52,11 @@ fs.createReadStream("urlset.csv")
     console.error("❌ Error loading dataset:", err.message);
   });
 
-// ✅ Google Safe Browsing API Setup
+// ✅ Google Safe Browsing API
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 const GOOGLE_SAFE_BROWSING_URL = `https://safebrowsing.googleapis.com/v4/threatMatches:find?key=${GOOGLE_API_KEY}`;
 
-// Check in local dataset
+// ✅ Dataset Check
 async function checkInDataset(url) {
   const cleanUrl = url.trim();
   if (dataset.has(cleanUrl)) {
@@ -66,13 +67,10 @@ async function checkInDataset(url) {
   return null;
 }
 
-// Check Google Safe Browsing
+// ✅ Google Safe Browsing Check
 async function checkGoogleSafeBrowsing(url) {
   const requestBody = {
-    client: {
-      clientId: "phishing-detector",
-      clientVersion: "1.0",
-    },
+    client: { clientId: "phishing-detector", clientVersion: "1.0" },
     threatInfo: {
       threatTypes: ["MALWARE", "SOCIAL_ENGINEERING"],
       platformTypes: ["ANY_PLATFORM"],
@@ -96,12 +94,12 @@ async function checkGoogleSafeBrowsing(url) {
   }
 }
 
-// Home route
+// ✅ Home Route
 app.get("/", (req, res) => {
   res.send("🌐 Phishing Detector Backend is running.");
 });
 
-// Prediction route
+// ✅ Predict Route
 app.post("/predict", async (req, res) => {
   const { url } = req.body;
   if (!url) {
@@ -134,6 +132,6 @@ app.post("/predict", async (req, res) => {
   });
 });
 
-// Start Server for Deployment
+// ✅ Start Server
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Server running on port ${PORT}`));
