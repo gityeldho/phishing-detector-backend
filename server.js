@@ -7,11 +7,12 @@ require("dotenv").config();
 
 const app = express();
 
-// ✅ Define allowed origins (Updated)
+// ✅ Define allowed origins (updated)
 const allowedOrigins = [
-  "https://web.whatsapp.com", // 👈 Added this line
   "chrome-extension://mnbalkhnikjhhbkjdniopgadipbiedki",
-  "https://phishing-detector-frontend-olive.vercel.app"
+  "https://phishing-detector-frontend-olive.vercel.app",
+  "https://web.whatsapp.com",
+  "https://www.google.com"
 ];
 
 // ✅ Apply CORS middleware
@@ -30,12 +31,10 @@ app.use(cors({
 
 // ✅ Handle preflight requests
 app.options("*", cors());
-
 app.use(express.json());
 
 // ✅ Load dataset from CSV
 const dataset = new Map();
-
 fs.createReadStream("urlset.csv")
   .pipe(csvParser())
   .on("data", (row) => {
@@ -56,7 +55,7 @@ fs.createReadStream("urlset.csv")
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 const GOOGLE_SAFE_BROWSING_URL = `https://safebrowsing.googleapis.com/v4/threatMatches:find?key=${GOOGLE_API_KEY}`;
 
-// Step 1: Check in local dataset
+// Check in local dataset
 async function checkInDataset(url) {
   const cleanUrl = url.trim();
   if (dataset.has(cleanUrl)) {
@@ -67,7 +66,7 @@ async function checkInDataset(url) {
   return null;
 }
 
-// Step 2: Check Google Safe Browsing
+// Check Google Safe Browsing
 async function checkGoogleSafeBrowsing(url) {
   const requestBody = {
     client: {
@@ -135,6 +134,6 @@ app.post("/predict", async (req, res) => {
   });
 });
 
-// ✅ Start Server for Deployment
+// Start Server for Deployment
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Server running on port ${PORT}`));
