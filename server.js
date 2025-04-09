@@ -103,16 +103,10 @@ app.post("/predict", async (req, res) => {
 
   return res.json({
     url: cleanUrl,
-    prediction,
-    source:
-      prediction === "phishing"
-        ? "Google Safe Browsing or Dataset"
-        : prediction === "safe"
-        ? "Google Safe Browsing or Dataset"
-        : "Unknown"
+    prediction
   });
 });
 
-// ✅ Start Server (Only once!)
+// ✅ Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
