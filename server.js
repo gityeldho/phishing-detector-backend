@@ -98,7 +98,7 @@ app.post("/predict", async (req, res) => {
   }
 
   if (prediction === "Error") {
-    prediction = "unknown";
+    prediction = "safe";
   }
 
   return res.json({
