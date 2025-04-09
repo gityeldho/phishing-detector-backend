@@ -6,62 +6,41 @@ const csvParser = require("csv-parser");
 require("dotenv").config();
 
 const app = express();
-app.use(express.json()); // Required to parse JSON body
 
-// ✅ Allowed Origins
-const allowedOrigins = [
-  "chrome-extension://mnbalkhnikjhhbkjdniopgadipbiedki",
-  "https://phishing-detector-frontend-olive.vercel.app",
-  "https://web.whatsapp.com",
-  "https://www.google.com"
-];
-
-// ✅ CORS Configuration
 app.use(cors({
-  origin: function (origin, callback) {
-    if (
-      !origin ||
-      origin.startsWith("chrome-extension://") ||
-      origin === "null" ||
-      allowedOrigins.includes(origin)
-    ) {
-      callback(null, true);
-    } else {
-      console.log("Blocked by CORS:", origin);
-      callback(new Error("❌ Not allowed by CORS: " + origin));
-    }
-  },
-  methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type"],
-  credentials: true
+  origin: "*",
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type"]
 }));
 
-// ✅ Google Safe Browsing API
-const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
-const GOOGLE_SAFE_BROWSING_URL = `https://safebrowsing.googleapis.com/v4/threatMatches:find?key=${GOOGLE_API_KEY}`;
+app.use(express.json());
 
-// ✅ Load dataset into Map
 const dataset = new Map();
 
+// ✅ Load dataset from CSV
 fs.createReadStream("urlset.csv")
   .pipe(csvParser())
   .on("data", (row) => {
-    const url = row["Domain"]?.trim();
-    const label = row["Label"]?.trim();
-    if (url && label) {
-      dataset.set(url, label);
+    if (row.domain && row.label !== undefined) {
+      const domain = row.domain.trim().replace(/^https?:\/\//, "").replace(/\/$/, "");
+      const label = row.label.trim();
+      dataset.set(domain, label);
     }
   })
   .on("end", () => {
-    console.log("✅ Dataset loaded:", dataset.size, "entries");
+    console.log(`✅ Dataset loaded with ${dataset.size} entries.`);
   })
   .on("error", (err) => {
     console.error("❌ Error loading dataset:", err.message);
   });
 
-// ✅ Dataset Check
+// ✅ Google Safe Browsing
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+const GOOGLE_SAFE_BROWSING_URL = `https://safebrowsing.googleapis.com/v4/threatMatches:find?key=${GOOGLE_API_KEY}`;
+
 async function checkInDataset(url) {
-  const cleanUrl = url.trim();
+  const cleanUrl = url.trim().replace(/^https?:\/\//, "").replace(/\/$/, "");
+
   if (dataset.has(cleanUrl)) {
     const label = dataset.get(cleanUrl).trim();
     console.log("✅ Found in dataset:", cleanUrl, "=>", label);
@@ -70,7 +49,6 @@ async function checkInDataset(url) {
   return null;
 }
 
-// ✅ Google Safe Browsing Check
 async function checkGoogleSafeBrowsing(url) {
   const requestBody = {
     client: { clientId: "phishing-detector", clientVersion: "1.0" },
@@ -78,8 +56,8 @@ async function checkGoogleSafeBrowsing(url) {
       threatTypes: ["MALWARE", "SOCIAL_ENGINEERING"],
       platformTypes: ["ANY_PLATFORM"],
       threatEntryTypes: ["URL"],
-      threatEntries: [{ url }],
-    },
+      threatEntries: [{ url }]
+    }
   };
 
   try {
@@ -97,14 +75,14 @@ async function checkGoogleSafeBrowsing(url) {
   }
 }
 
-// ✅ Home Route
+// ✅ Routes
 app.get("/", (req, res) => {
   res.send("🌐 Phishing Detector Backend is running.");
 });
 
-// ✅ Predict Route
 app.post("/predict", async (req, res) => {
   const { url } = req.body;
+
   if (!url) {
     return res.status(400).json({ error: "URL is required" });
   }
@@ -115,7 +93,7 @@ app.post("/predict", async (req, res) => {
   let prediction = await checkInDataset(cleanUrl);
 
   if (!prediction) {
-    console.log("❌ Not found in dataset. Checking with Google Safe Browsing...");
+    console.log("❌ Not found in dataset. Checking Google Safe Browsing...");
     prediction = await checkGoogleSafeBrowsing(cleanUrl);
   }
 
@@ -128,13 +106,13 @@ app.post("/predict", async (req, res) => {
     prediction,
     source:
       prediction === "phishing"
-        ? "Google Safe Browsing"
+        ? "Google Safe Browsing or Dataset"
         : prediction === "safe"
         ? "Google Safe Browsing or Dataset"
         : "Unknown"
   });
 });
 
-// ✅ Start Server
-const PORT = process.env.PORT || 5001;
-app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Server running on port ${PORT}`));
+// ✅ Start Server (Only once!)
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
